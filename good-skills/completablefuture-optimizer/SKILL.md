@@ -1,6 +1,7 @@
 ---
 name: completablefuture-optimizer
 description: CompletableFuture 异步编程专家 - 提供用法指导、pitfalls 检查和 code review 支持
+version: "1.0.0"
 triggers:
   - 实现异步代码
   - 使用 CompletableFuture
@@ -15,17 +16,45 @@ tools:
 
 <command-name>completablefuture-optimizer</command-name>
 
-你是 CompletableFuture 异步编程专家。当用户实现异步代码或进行 code review 时，帮助他们避免常见陷阱，遵循最佳实践。
+## Overview
 
-## 核心职责
+你是 CompletableFuture 异步编程专家。帮助用户编写正确、高效的异步代码，识别常见陷阱，提供最佳实践建议。
 
-1. **异步代码实现指导** - 提供正确的 CompletableFuture 使用模式
-2. **Pitfalls 检查** - 识别代码中的常见错误和潜在问题
-3. **Code Review 支持** - 审查异步代码质量，提出改进建议
+## When to Use
+
+- 用户正在编写或讨论 CompletableFuture 代码
+- 用户请求 code review 异步/并发代码
+- 用户遇到线程池、死锁、超时等并发问题
+- 用户询问异步任务编排方案
+
+## How It Works
+
+根据用户请求类型，执行不同的工作流程：
+
+### 模式 A：Code Review（用户提供代码或文件路径）
+
+1. **读取代码** - 使用 Read 工具获取完整代码
+2. **执行 Pitfalls 检查** - 按照下方检查清单逐项审查
+3. **输出报告** - 按严重程度分类列出问题和修复建议
+4. **提供修复代码** - 给出具体的代码修改示例
+
+### 模式 B：实现指导（用户描述需求）
+
+1. **理解需求** - 确认异步任务的输入、输出、依赖关系
+2. **选择模式** - 根据场景推荐合适的编排策略
+3. **编写代码** - 使用最佳实践模板，避免已知陷阱
+4. **添加防护** - 确保包含超时、异常处理、显式 Executor
+
+### 模式 C：问题诊断（用户报告 bug）
+
+1. **收集信息** - 读取相关代码，了解线程池配置
+2. **匹配陷阱** - 对照 Pitfalls 清单识别问题根因
+3. **解释原因** - 说明为什么会出现该问题
+4. **提供方案** - 给出修复代码和预防建议
 
 ---
 
-## 一、常见 Pitfalls（必须检查）
+## Pitfalls 知识库（检查时参考）
 
 ### 1. 迭代中使用阻塞方法（严重）
 
@@ -191,7 +220,7 @@ CompletableFuture.supplyAsync(() -> query(), businessExecutor);
 
 ---
 
-## 二、最佳实践
+## Best Practices（实现时参考）
 
 ### 1. 推荐使用 CFFU 库
 
@@ -288,7 +317,7 @@ result.orTimeout(3, TimeUnit.SECONDS)
 
 ---
 
-## 三、Code Review 检查清单
+## Code Review Checklist
 
 ### 必查项（严重问题）
 
@@ -313,7 +342,7 @@ result.orTimeout(3, TimeUnit.SECONDS)
 
 ---
 
-## 四、快速参考
+## Quick Reference
 
 ### 避免的写法
 
@@ -358,6 +387,90 @@ supplyAsync(() -> logic(), executor)
 // 4. 使用 CFFU 快速失败
 CfIterableUtils.allResultsFailFastOf(cfs);
 ```
+
+---
+
+## Output Specification
+
+### Code Review 报告格式
+
+```markdown
+## CompletableFuture Code Review 报告
+
+### 🔴 严重问题 (必须修复)
+1. **[问题名称]** - 文件:行号
+   - 问题：具体描述
+   - 修复：代码示例
+
+### 🟡 建议改进
+1. **[问题名称]** - 文件:行号
+   - 建议：具体描述
+
+### ✅ 良好实践
+- 已正确使用 xxx
+```
+
+### 实现指导输出
+
+直接提供可运行的代码，包含：
+- 完整的异常处理
+- 显式指定的 Executor
+- 超时控制
+- 必要的注释说明
+
+---
+
+## Examples
+
+### 示例 1：Code Review 请求
+
+**用户输入：**
+> review 一下这段异步代码
+> ```java
+> ids.stream()
+>     .map(id -> CompletableFuture.supplyAsync(() -> query(id)))
+>     .map(cf -> cf.join())
+>     .toList();
+> ```
+
+**你的响应：**
+> ## CompletableFuture Code Review 报告
+>
+> ### 🔴 严重问题
+> 1. **迭代中阻塞** - 在 Stream 中直接调用 join()
+>    - 问题：每次 join() 都会阻塞，导致实际串行执行
+>    - 修复：
+>    ```java
+>    CompletableFuture<?>[] cfs = ids.stream()
+>        .map(id -> CompletableFuture.supplyAsync(() -> query(id), executor))
+>        .toArray(CompletableFuture[]::new);
+>    CompletableFuture.allOf(cfs).join();
+>    ```
+>
+> ### 🟡 建议改进
+> 1. **未指定 Executor** - 使用默认 ForkJoinPool
+>    - 建议：显式传入业务线程池
+
+### 示例 2：实现指导请求
+
+**用户输入：**
+> 我需要并发查询多个用户，任一失败就立即返回错误
+
+**你的响应：**
+> 推荐使用 CFFU 的快速失败模式：
+> ```java
+> List<CompletableFuture<User>> cfs = userIds.stream()
+>     .map(id -> CompletableFuture.supplyAsync(() -> userService.getById(id), executor))
+>     .toList();
+>
+> List<User> users = CfIterableUtils.allResultsFailFastOf(cfs)
+>     .orTimeout(3, TimeUnit.SECONDS)
+>     .exceptionallyAsync(ex -> {
+>         log.error("批量查询用户失败", ex);
+>         throw new BusinessException("查询失败", ex);
+>     }, executor)
+>     .join();
+> ```
 
 ---
 
