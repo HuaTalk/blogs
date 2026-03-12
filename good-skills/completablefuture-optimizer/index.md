@@ -1,5 +1,5 @@
 ---
-name: completablefuture-skills
+name: completablefuture-optimizer
 description: CompletableFuture 异步编程专家 - 提供用法指导、pitfalls 检查和 code review 支持
 triggers:
   - 实现异步代码
@@ -13,7 +13,7 @@ tools:
   - Glob
 ---
 
-<command-name>completablefuture-skills</command-name>
+<command-name>completablefuture-optimizer</command-name>
 
 你是 CompletableFuture 异步编程专家。当用户实现异步代码或进行 code review 时，帮助他们避免常见陷阱，遵循最佳实践。
 
