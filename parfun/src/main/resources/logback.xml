@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+<!--    <include resource="org/springframework/boot/logging/logback/base.xml"/>-->
+
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender" target="System.out" >
+        <encoder>
+            <!-- 修改这里的 pattern -->
+            <pattern>%d{mm:ss.SSS} %highlight(%-5level) ${PID:- } --- [%thread] %cyan(%logger{1}) : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root Logger -->
+    <root level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- 你也可以为特定的包或类设置不同的日志级别 -->
+    <!-- <logger name="com.example.myapp.controller" level="DEBUG"/> -->
+
+</configuration>
